@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grile – Peptide și Proteine</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#fff; --text:#1d2433; --muted:#6b7385; --border:#dde2ec;
+    --accent:#3b5bdb; --accent-soft:#e7ecff;
+    --ok:#2b8a3e; --ok-soft:#e3f6e8; --bad:#c92a2a; --bad-soft:#fdeaea; --warn:#e67700; --warn-soft:#fff4e0;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171f; --card:#1d212c; --text:#e6e9f0; --muted:#9aa3b5; --border:#2e3443;
+      --accent:#7b93ff; --accent-soft:#273055;
+      --ok:#51cf66; --ok-soft:#1d3324; --bad:#ff6b6b; --bad-soft:#3a1f22; --warn:#ffa94d; --warn-soft:#3a2c17;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+  header{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .bar{max-width:860px;margin:0 auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  h1{font-size:1.15rem;margin:0}
+  .stats{font-size:.92rem;color:var(--muted)}
+  .stats b{color:var(--text)}
+  .progress{height:4px;background:var(--border)}
+  .progress > div{height:100%;width:0;background:var(--accent);transition:width .25s}
+  .tools{display:flex;flex-wrap:wrap;gap:8px}
+  button{font:inherit;font-size:.9rem;border:1px solid var(--border);background:var(--card);color:var(--text);padding:7px 12px;border-radius:8px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.active{background:var(--accent-soft);border-color:var(--accent)}
+  main{max-width:860px;margin:0 auto;padding:18px 16px 60px}
+  .intro{background:var(--accent-soft);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.95rem}
+  .result{display:none;background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:18px;text-align:center}
+  .result .big{font-size:2rem;font-weight:700}
+  .q{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .q.ok{border-left:6px solid var(--ok)} .q.partial{border-left:6px solid var(--warn)} .q.bad{border-left:6px solid var(--bad)}
+  .qhead{display:flex;justify-content:space-between;gap:10px;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+  .qtext{font-weight:600;margin-bottom:12px}
+  .opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:9px 12px;margin:6px 0;border:1px solid var(--border);border-radius:9px;background:transparent;cursor:pointer;transition:background .15s,border-color .15s}
+  .opt:hover{background:var(--accent-soft)}
+  .opt .box{flex:0 0 26px;height:26px;border:2px solid var(--muted);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+  .opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .opt.sel .box{background:var(--accent);border-color:var(--accent);color:#fff}
+  .opt.correct{border-color:var(--ok);background:var(--ok-soft)}
+  .opt.correct .box{background:var(--ok);border-color:var(--ok);color:#fff}
+  .opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+  .opt.wrong .box{background:var(--bad);border-color:var(--bad);color:#fff}
+  .opt.missed{border:2px dashed var(--ok)}
+  .opt.missed .box{border-color:var(--ok);color:var(--ok)}
+  .opt .tag{margin-left:auto;font-size:.78rem;font-weight:600;white-space:nowrap;padding-left:8px}
+  .opt.correct .tag{color:var(--ok)} .opt.wrong .tag{color:var(--bad)} .opt.missed .tag{color:var(--ok)}
+  .locked .opt{cursor:default}
+  .locked .opt:hover{background:inherit}
+  .actions{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+  .hint{font-size:.85rem;color:var(--bad)}
+  .feedback{display:none;margin-top:12px;padding:10px 12px;border-radius:9px;font-size:.93rem}
+  .feedback.ok{display:block;background:var(--ok-soft)} .feedback.partial{display:block;background:var(--warn-soft)} .feedback.bad{display:block;background:var(--bad-soft)}
+  .verdict{font-weight:700;margin-bottom:4px}
+  .feedback.ok .verdict{color:var(--ok)} .feedback.partial .verdict{color:var(--warn)} .feedback.bad .verdict{color:var(--bad)}
+  .hidden{display:none !important}
+  @media (max-width:640px){header{position:static}}
+  .cite{margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+  .cite-title{font-weight:700;font-size:.88rem;margin-bottom:4px}
+  .cite blockquote{margin:6px 0;padding:6px 10px;border-left:3px solid var(--accent);background:var(--card);border-radius:0 6px 6px 0;font-style:italic;font-size:.9rem}
+  .cite .pg{font-style:normal;color:var(--muted);font-size:.8rem;white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>🧬 Grile – Structura peptidelor și proteinelor</h1>
+    <div class="stats">Verificate: <b id="sDone">0</b>/<span id="sTotal">40</span> · Corecte: <b id="sOk">0</b> · Scor: <b id="sPct">–</b></div>
+  </div>
+  <div class="bar" style="padding-top:0">
+    <div class="tools">
+      <button class="primary" id="btnFinish">Termină testul</button>
+      <button id="btnWrong">Doar greșelile</button>
+      <button id="btnShuffle">Amestecă întrebările</button>
+      <button id="btnReset">Resetează</button>
+    </div>
+  </div>
+  <div class="progress"><div id="prog"></div></div>
+</header>
+
+<main>
+  <div class="intro">
+    <b>Instrucțiuni:</b> unele întrebări au <b>un singur</b> răspuns corect, altele au <b>mai multe</b>.
+    Selectează toate variantele pe care le consideri corecte, apoi apasă <b>Verifică</b>.
+    O întrebare este punctată doar dacă ai marcat <b>exact</b> variantele corecte.
+    <br><span style="font-size:.85rem;color:var(--muted)">Legendă după verificare: verde = corect marcat · roșu = marcat greșit · contur verde punctat = corect, dar nemarcat.</span>
+  </div>
+  <div class="result" id="result"></div>
+  <div id="quiz"></div>
+</main>
+
+<script>
+const QUESTIONS = [
+{ q:"Referitor la legătura peptidică, sunt corecte:",
+  o:["Este o legătură amidică între grupul α-carboxil al unui aminoacid și grupul α-amino al aminoacidului următor",
+     "Se formează cu eliminarea unei molecule de apă",
+     "Este ruptă ușor prin încălzire și de concentrațiile mari de uree",
+     "Poate fi ruptă prin expunere prelungită la un acid sau o bază puternică, la temperaturi ridicate",
+     "Este o legătură necovalentă"],
+  c:[0,1,3],
+  e:"Legătura peptidică este o legătură amidică (covalentă) între α-COOH și α-NH2 al aminoacidului următor, cu pierderea unei molecule de apă. Este rezistentă la căldură și uree (agenți denaturanți); se rupe doar la expunere prelungită la acizi/baze tari la temperatură ridicată sau de către enzime proteolitice." },
+
+{ q:"Un tripeptid format dintr-o valină N-terminală, o glicină și o leucină C-terminală se numește:",
+  o:["Valină-glicină-leucină","Valil-glicil-leucină","Leucil-glicil-valină","Valil-glicil-leucil","Valină-glicil-leucil"],
+  c:[1],
+  e:"Secvența se citește de la capătul N- la cel C-terminal, iar toate reziduurile primesc sufixul „-il”, cu excepția aminoacidului C-terminal → valil-glicil-leucină." },
+
+{ q:"Despre caracteristicile legăturii peptidice, sunt corecte:",
+  o:["Are caracter parțial de dublă legătură, fiind mai scurtă decât o legătură simplă",
+     "Permite rotația liberă în jurul legăturii dintre carbonul carbonilic și azot",
+     "Se află aproape întotdeauna în configurația trans, mai ales din cauza interferenței sterice a grupurilor R",
+     "Grupările −C=O și −NH sunt neîncărcate, dar polare, putând forma legături de hidrogen",
+     "Grupările −C=O și −NH acceptă sau cedează protoni în intervalul de pH 2–12"],
+  c:[0,2,3],
+  e:"Caracterul parțial de dublă legătură o face scurtă, rigidă și planară – nu există rotație liberă C–N (rotația e posibilă doar în jurul legăturilor carbonului α). Configurația este aproape întotdeauna trans. −C=O și −NH sunt neîncărcate (nu acceptă/nu cedează protoni la pH 2–12), dar polare → participă la legături de hidrogen." },
+
+{ q:"Despre determinarea compoziției în aminoacizi a unui polipeptid (analizorul de aminoacizi), sunt corecte:",
+  o:["Polipeptidul purificat este mai întâi hidrolizat cu un acid puternic",
+     "Aminoacizii eliberați sunt separați cromatografic, în funcție de sarcină, hidrofobicitate și alte caracteristici",
+     "Aminoacizii separați sunt cuantificați spectrofotometric, după o reacție de culoare",
+     "Metoda furnizează direct ordinea aminoacizilor în lanț",
+     "Hidroliza se realizează cu tripsină, care eliberează toți aminoacizii individuali"],
+  c:[0,1,2],
+  e:"Proba purificată se hidrolizează cu acid puternic; aminoacizii eliberați se separă cromatografic și se cuantifică spectrofotometric după o reacție de culoare (ninhidrină). Metoda dă compoziția (procentele), NU ordinea aminoacizilor – aceasta se obține prin secvențiere." },
+
+{ q:"Referitor la secvențierea polipeptidelor, sunt corecte:",
+  o:["Metoda Edman identifică pas cu pas aminoacizii începând cu capătul N-terminal, peptidul scurtându-se cu un aminoacid la fiecare ciclu",
+     "Metoda Edman poate secvenția eficient, direct de la un capăt la altul, lanțuri de peste 100 de aminoacizi",
+     "Tripsina taie doar după arginină și lizină",
+     "Carboxipeptidazele sunt utilizate pentru determinarea aminoacidului C-terminal",
+     "Exopeptidazele taie legăturile peptidice din interiorul lanțului"],
+  c:[0,2,3],
+  e:"Edman pornește de la capătul N-terminal; la lanțuri lungi (>100 aa) spălările repetate devin ineficiente, deci proteina se fragmentează (ex. tripsina – după Arg și Lys). Exopeptidazele (amino- și carboxipeptidaze) taie la capete; carboxipeptidazele identifică aminoacidul C-terminal. Endopeptidazele taie în interior." },
+
+{ q:"Referitor la determinarea structurii primare prin secvențierea ADN-ului, sunt corecte:",
+  o:["Este o metodă directă, care analizează chiar proteina",
+     "Nu poate prezice pozițiile legăturilor disulfidice din lanțul pliat",
+     "Nu identifică aminoacizii modificați post-translațional",
+     "Face inutilă secvențierea directă a proteinelor",
+     "Poate identifica hidroxiprolina din colagen"],
+  c:[1,2],
+  e:"Secvențierea ADN-ului este indirectă (traducere prin codul genetic). Nu arată pozițiile punților disulfidice și nici modificările post-translaționale (ex. hidroxiprolina din colagen apare după sinteză). De aceea secvențierea directă a proteinelor rămâne extrem de importantă." },
+
+{ q:"Despre α-helix, sunt corecte:",
+  o:["Este o structură spiralată rigidă, cu sensul spre dreapta",
+     "Lanțurile laterale R sunt orientate spre axul central al spiralei",
+     "Fiecare tur complet conține 3,6 aminoacizi",
+     "Legăturile de hidrogen unesc C=O al unei legături peptidice cu –NH al legăturii peptidice aflate la patru reziduuri distanță",
+     "Keratinele din păr și piele au o structură secundară aproape în întregime α-helicoidală"],
+  c:[0,2,3,4],
+  e:"α-helixul este rigid, spre dreapta, cu 3,6 aa/tur; grupurile R se extind în AFARA axului (evită interferența sterică). Legăturile de H (C=O → –NH aflat la 4 reziduuri) sunt paralele cu axul. Keratinele (fibroase, rigide) sunt aproape în întregime α-helicoidale; mioglobina e tot predominant α-helicoidală, dar globulară și flexibilă." },
+
+{ q:"Prolina perturbă α-helixul deoarece:",
+  o:["Are un grup R încărcat electric la pH fiziologic",
+     "Are hidrogen ca grup R, conferind o flexibilitate prea mare",
+     "Gruparea sa amino secundară, rigidă, nu este compatibilă geometric cu spirala spre dreapta",
+     "Formează punți disulfidice cu reziduurile vecine",
+     "Este ramificată la primul atom de carbon al grupului R"],
+  c:[2],
+  e:"Prolina are o grupare amino secundară, rigidă, incompatibilă cu spirala spre dreapta → introduce o îndoitură de ~80°. Celelalte variante descriu alți aminoacizi: grup R încărcat (glutamat), H ca radical (glicina – flexibilitate), ramificare la primul C (valina)." },
+
+{ q:"Despre β-foaie (β-plisare), sunt corecte:",
+  o:["Toate componentele legăturii peptidice sunt implicate în legături de hidrogen",
+     "Legăturile de hidrogen dintre fâșii sunt perpendiculare pe scheletul polipeptidic",
+     "Fâșiile β sunt strâns înfășurate în jurul unei axe centrale",
+     "Legăturile de hidrogen pot fi intracatenare sau intercatenare",
+     "Fâșiile β adiacente pot fi orientate doar antiparalel"],
+  c:[0,1,3],
+  e:"În β-foaie, fâșiile sunt aproape complet extinse (nu înfășurate), iar legăturile de H sunt perpendiculare pe schelet. Fâșiile pot proveni din același lanț (intracatenar) sau din lanțuri diferite (intercatenar) și pot fi paralele SAU antiparalele." },
+
+{ q:"Referitor la β-îndoituri (β-turns), sunt corecte:",
+  o:["Inversează direcția lanțului polipeptidic, contribuind la forma globulară compactă",
+     "Sunt alcătuite, în general, din patru aminoacizi",
+     "Se găsesc de obicei în miezul hidrofob al proteinei",
+     "Sunt stabilizate prin punți disulfidice între primul și ultimul reziduu",
+     "Nu conțin niciodată prolină sau glicină"],
+  c:[0,1],
+  e:"β-îndoiturile inversează direcția lanțului, au de regulă 4 aminoacizi, se află la SUPRAFAȚA proteinei (adesea cu reziduuri încărcate), conțin frecvent prolină (formă cis) și glicină și sunt stabilizate prin legături de HIDROGEN între primul și ultimul reziduu." },
+
+{ q:"Termenul de „spirală aleatorie” (random coil) se referă la:",
+  o:["Buclele neregulate (structura secundară nonrepetitivă) din proteinele native",
+     "Structura dezordonată obținută doar atunci când proteinele sunt denaturate",
+     "Conformația β-îndoiturilor de la suprafața proteinelor",
+     "Conformația lanțurilor α din colagen",
+     "Aranjamentul aleatoriu al subunităților în structura cuaternară"],
+  c:[1],
+  e:"Cam jumătate dintr-o proteină globulară e organizată în structuri repetitive (α-helix, β-foaie); restul formează bucle neregulate care NU sunt aleatorii, ci doar mai puțin regulate. „Spirala aleatorie” desemnează numai structura dezordonată a proteinelor denaturate." },
+
+{ q:"Despre structurile supersecundare (motive) și domenii, sunt corecte:",
+  o:["Motivele rezultă din combinarea α-helixurilor, β-foilor și buclelor",
+     "Motivele formează în principal suprafața moleculei, fiind conectate prin bucle situate în interior",
+     "Motivul helix–buclă–helix se întâlnește în proteine care controlează sinteza ARN (factori de transcripție)",
+     "Lanțurile polipeptidice de peste 200 de aminoacizi conțin de obicei două sau mai multe domenii",
+     "Elementele de structură secundară adiacente în secvență nu sunt niciodată adiacente în proteina pliată"],
+  c:[0,2,3],
+  e:"Motivele formează în primul rând MIEZUL moleculei și sunt conectate prin bucle (ex. β-îndoituri) de la suprafață. Elementele adiacente în secvență sunt de obicei (nu întotdeauna) adiacente și în proteina pliată. Domeniile (unități funcționale și structurale) au nucleul construit din motive; lanțurile >200 aa au de obicei ≥2 domenii." },
+
+{ q:"Despre structura terțiară a proteinelor, sunt corecte:",
+  o:["Ca regulă generală, structura terțiară este determinată de structura primară",
+     "La proteinele globulare în soluție apoasă, lanțurile laterale hidrofobe sunt îngropate în interior",
+     "La proteinele transmembranare, radicalii hidrofili sunt localizați în stratul fosfolipidic",
+     "Interiorul proteinelor globulare are o densitate mică, cu ambalare laxă",
+     "Termenul de structură terțiară se referă exclusiv la ordinea aminoacizilor"],
+  c:[0,1],
+  e:"Structura primară determină structura terțiară. Proteinele globulare sunt compacte, cu densitate mare în interior: radicali hidrofobi înăuntru, hidrofili la suprafață. Excepție: proteinele transmembranare – radicalii HIDROFOBI stau în stratul fosfolipidic, iar cei hidrofili în spațiul intra-/extracelular." },
+
+{ q:"Referitor la legăturile disulfidice, sunt corecte:",
+  o:["Sunt legături covalente între grupările sulfhidril (–SH) a două reziduuri de cisteină",
+     "Prin formarea lor rezultă un reziduu de cistină",
+     "Se pot forma doar între cisteine învecinate în secvența primară",
+     "Sunt frecvente în proteinele secretate, ca imunoglobulinele, protejându-le de denaturare în mediul extracelular",
+     "Izomeraza proteinelor disulfidice rupe și reformează aceste legături în timpul îndoirii"],
+  c:[0,1,3,4],
+  e:"Puntea –S–S– se formează prin oxidarea a două grupări –SH ale cisteinei → cistină. Cisteinele pot fi separate de mulți aminoacizi în secvență sau chiar situate pe lanțuri diferite – îndoirea le aduce în apropiere." },
+
+{ q:"Pot forma interacțiuni de tip ionic între lanțurile lor laterale perechile de aminoacizi:",
+  o:["Aspartat – lizină","Serină – treonină","Leucină – izoleucină","Glutamat – lizină","Cisteină – cisteină"],
+  c:[0,3],
+  e:"Interacțiunile ionice apar între grupări încărcate negativ (–COO⁻ din aspartat/glutamat) și pozitiv (–NH3⁺ din lizină). Serina/treonina (–OH) formează legături de hidrogen, leucina/izoleucina – interacțiuni hidrofobe, iar cisteinele – punți disulfidice." },
+
+{ q:"Referitor la îndoirea proteinelor (protein folding), sunt corecte:",
+  o:["Are loc în celulă în câteva secunde până la câteva minute",
+     "Urmează căi aleatorii, fără o ordine anume",
+     "Formarea structurilor secundare este determinată de efectul hidrofob",
+     "Forma nativă finală este caracterizată printr-o stare energetică scăzută",
+     "Există proteine biologic active fără structură terțiară stabilă (intrinsec dezordonate)"],
+  c:[0,2,3,4],
+  e:"Îndoirea urmează căi ORDONATE, non-aleatorii: structuri secundare (efect hidrofob – grupările hidrofobe se apropie, apa e eliberată) → domenii → monomer final, nativ, cu energie scăzută. Proteinele intrinsec dezordonate există, dar sunt rare." },
+
+{ q:"Despre denaturarea proteinelor, sunt corecte:",
+  o:["Implică hidroliza legăturilor peptidice",
+     "Determină desfacerea și dezorganizarea structurilor secundare și terțiare",
+     "Poate fi produsă de uree, detergenți sau ioni de metale grele (ex. plumb)",
+     "Este întotdeauna ireversibilă, chiar și în condiții ideale",
+     "Proteinele denaturate sunt adesea insolubile și precipită din soluție"],
+  c:[1,2,4],
+  e:"Denaturarea NU hidrolizează legăturile peptidice. Agenți: căldură, uree, solvenți organici, acizi/baze tari, detergenți, metale grele. În condiții ideale poate fi reversibilă, dar majoritatea proteinelor rămân permanent dezordonate." },
+
+{ q:"Referitor la chaperonele moleculare, sunt corecte:",
+  o:["Pentru multe proteine, îndoirea asistată de chaperone necesită hidroliza ATP",
+     "Unele chaperone sunt cunoscute ca proteine de șoc termic (HSPs)",
+     "Hsp70 leagă regiunile hidrofobe ale polipeptidului extins, menținându-l neîndoit până la finalizarea sintezei",
+     "Hsp60 mitocondrial formează o structură de tip cușcă din două inele suprapuse",
+     "Majoritatea proteinelor denaturate își reiau spontan conformația nativă în condiții favorabile"],
+  c:[0,1,2,3],
+  e:"Deși informația pentru îndoire se află în structura primară, majoritatea proteinelor denaturate NU își reiau spontan conformația nativă – îndoirea e un proces facilitat (ATP + chaperone). Chaperonele leagă regiunile hidrofobe expuse, prevenind agregarea și îndoirea prematură." },
+
+{ q:"Izoformele unei proteine sunt:",
+  o:["Proteine cu aceeași structură primară, dar cu funcții diferite",
+     "Proteine care îndeplinesc aceeași funcție, dar au structuri primare diferite",
+     "Subunitățile identice ale unei proteine cu structură cuaternară",
+     "Forme denaturate reversibil ale aceleiași proteine",
+     "Produse exclusiv de gene diferite, niciodată de procesarea produsului unei singure gene"],
+  c:[1],
+  e:"Izoformele au aceeași funcție, dar structuri primare diferite; provin din gene diferite SAU din procesarea specifică de țesut a produsului unei singure gene. Izoformele cu activitate enzimatică se numesc izoenzime." },
+
+{ q:"Referitor la boala Alzheimer (AD), sunt corecte:",
+  o:["Componenta dominantă a plăcii amiloide este peptidul Aβ, cu 40–42 de reziduuri de aminoacizi",
+     "Aβ agregat are o structură secundară predominant α-helicoidală",
+     "Aβ rezultă prin tăieri enzimatice (secretaze) dintr-o proteină precursoare transmembranară",
+     "Mutațiile presenilinei, subunitatea catalitică a γ-secretazei, sunt cea mai comună cauză a AD familial",
+     "Fibrele încâlcite intraneuronale conțin o formă anormală, hiperfosforilată și insolubilă, a proteinei tau"],
+  c:[0,2,3,4],
+  e:"Aβ este un peptid extracelular cu structură de foi β (nu α-helix), neurotoxic când se agregă. Majoritatea cazurilor de AD nu sunt genetice (cel puțin 5% sunt familiale). Al doilea factor: proteina tau anormală (hiperfosforilată, insolubilă) din fibrele încâlcite intraneuronale." },
+
+{ q:"Referitor la prioni, sunt corecte:",
+  o:["Sunt proteine care apar în mod normal în organismele vii",
+     "Forma patologică apare prin conversia unor structuri secundare α în structuri β",
+     "Boala Creutzfeldt-Jakob este o boală prionică umană",
+     "„Boala vacii nebune” (encefalopatia spongiformă bovină) este o boală prionică",
+     "Agentul infecțios trebuie să conțină obligatoriu un acid nucleic"],
+  c:[0,1,2,3],
+  e:"Prionii sunt proteine normale care, pliate greșit (α → β), devin infecțioase și pot „corupe” proteinele normale din jur. Agentul infecțios poate fi chiar o proteină împachetată anormal – de aici întrebarea despre granița dintre viu și neviu." },
+
+{ q:"La heteroproteine, partea proteică și partea neproteică se numesc, respectiv:",
+  o:["Holoproteină și apoproteină","Apoproteină și grupare (parte) prostetică","Grupare prostetică și apoproteină","Reziduu și cofactor","Domeniu și motiv"],
+  c:[1],
+  e:"Heteroproteinele = apoproteină (partea proteică) + grupare prostetică (partea neproteică). Proteinele simple (holoproteinele) sunt formate numai din aminoacizi." },
+
+{ q:"Sunt corecte următoarele asocieri:",
+  o:["Fosfoproteine – fosfat legat de serină, treonină sau tirozină (ex. cazeina din lapte)",
+     "Lipoproteine – HDL, LDL",
+     "Metaloproteine – zinc în alcool dehidrogenază, molibden în xantin oxidază",
+     "Flavoproteine – conțin hem ca grupare prostetică",
+     "Glicoproteine – grupare prostetică din clasa lipidelor"],
+  c:[0,1,2],
+  e:"Flavoproteinele au o structură flavinică (enzime care folosesc vitamina B2); hemul caracterizează hemoproteinele (cromoproteine). Glicoproteinele au grupare prostetică GLUCIDICĂ. Alte metaloproteine: Mn/Cu în superoxid dismutază." },
+
+{ q:"Proteinele fibroase:",
+  o:["Au formă sferică și sunt solubile în apă",
+     "Sunt organizate în filamente, au secvențe repetitive de aminoacizi, sunt relativ insolubile și au rol structural/protector",
+     "Includ mioglobina și hemoglobina",
+     "Au, ca și proteinele globulare, mulți aminoacizi hidrofili la suprafață, care le fac solubile",
+     "Au rol principal în transportul oxigenului"],
+  c:[1],
+  e:"Proteinele fibroase (ex. colagen, elastina) formează filamente asemănătoare cu tije, insolubile, cu rol structural (țesut conjunctiv, tendoane, oase). Mioglobina și hemoglobina sunt proteine globulare, solubile în apă." },
+
+{ q:"Despre structura hemului, sunt corecte:",
+  o:["Este o structură plană, cu un inel porfirinic format din 4 nuclee de pirol",
+     "Fierul din hemul funcțional este în stare ferică (Fe³⁺)",
+     "Fierul este legat de cei patru atomi de azot ai inelului porfirinic",
+     "În hemoglobină, Fe²⁺ se leagă de o histidină a globinei, iar cealaltă poziție liberă este disponibilă pentru O2",
+     "Nucleele de pirol sunt unite prin punți de câte 2 atomi de carbon"],
+  c:[0,2,3],
+  e:"Hemul: inel porfirinic plan (4 pirol uniți prin punți de 1 C) cu fier FEROS (Fe²⁺) legat de 4 atomi de N. Fe²⁺ mai formează 2 legături, de o parte și de alta a planului: cu histidina (proximală) și cu O2." },
+
+{ q:"Despre mioglobină, sunt corecte:",
+  o:["Este formată dintr-un singur lanț polipeptidic",
+     "Aproximativ 80% din lanț este organizat în opt segmente α-helicale (A–H)",
+     "Interiorul moleculei este format aproape în întregime din aminoacizi polari",
+     "Funcționează ca rezervor de oxigen și crește rata de transport a O2 în celula musculară",
+     "Este un tetramer format din două lanțuri α și două lanțuri β"],
+  c:[0,1,3],
+  e:"Mioglobina (miocard, mușchi scheletic) e monomerică; segmentele α-helicale sunt delimitate de prolină sau de β-turn-uri/bucle. Interiorul e aproape exclusiv NEPOLAR (interacțiuni hidrofobe), iar aminoacizii polari sunt la suprafață." },
+
+{ q:"În buzunarul hemului din mioglobină, histidina distală:",
+  o:["Se leagă direct de Fe²⁺ al hemului",
+     "Nu interacționează direct cu hemul, dar ajută la stabilizarea legării O2 la Fe²⁺",
+     "Oxidează Fe²⁺ la Fe³⁺, permițând legarea O2",
+     "Este un aminoacid nepolar, ca restul aminoacizilor care căptușesc buzunarul",
+     "Formează o legătură covalentă cu inelul porfirinic"],
+  c:[1],
+  e:"Histidina PROXIMALĂ se leagă direct de Fe²⁺; histidina DISTALĂ doar stabilizează legarea O2. Ambele sunt aminoacizi bazici – excepții într-un buzunar căptușit cu aminoacizi nepolari." },
+
+{ q:"Despre structura hemoglobinei, sunt corecte:",
+  o:["HbA este formată din două lanțuri α și două lanțuri β",
+     "În fiecare dimer αβ, lanțurile sunt ținute strâns în principal prin interacțiuni hidrofobe",
+     "Cei doi dimeri αβ sunt legați între ei prin punți disulfidice covalente",
+     "Hemoglobina transportă și H⁺ și CO2 de la țesuturi la plămâni",
+     "Hemoglobina se găsește atât în eritrocite, cât și în fibrele musculare"],
+  c:[0,1,3],
+  e:"HbA (α2β2) se găsește EXCLUSIV în eritrocite. Dimerii α1β1 și α2β2 sunt legați între ei mai slab, prin legături polare (necovalente) – ceea ce le permite să se miște unul față de altul la oxigenare/deoxigenare." },
+
+{ q:"Referitor la formele T și R ale hemoglobinei, sunt corecte:",
+  o:["Forma T (tensionată) corespunde deoxihemoglobinei",
+     "În forma T, Fe²⁺ este tras în afara planului hemului",
+     "Forma R (relaxată) este forma cu afinitate scăzută pentru O2",
+     "Legarea O2 trage Fe²⁺ în planul hemului, iar prin histidina proximală se modifică interfața dintre dimerii αβ",
+     "În forma T, dimerii αβ nu sunt legați prin nicio legătură ionică sau de hidrogen"],
+  c:[0,1,3],
+  e:"Forma T: rețea de legături ionice și de hidrogen între dimeri, mobilitate redusă, Fe²⁺ în afara planului, afinitate SCĂZUTĂ. Forma R: Fe²⁺ în planul hemului, afinitate ÎNALTĂ pentru O2." },
+
+{ q:"Referitor la legarea oxigenului la mioglobină și hemoglobină, sunt corecte:",
+  o:["Mioglobina are o afinitate mai mare pentru O2 decât hemoglobina, la toate valorile pO2",
+     "Curba de disociere a hemoglobinei este sigmoidală, indicând cooperarea subunităților",
+     "Prima moleculă de O2 se leagă cel mai ușor de hemoglobină",
+     "Pulsoximetria este o metodă neinvazivă, bazată pe absorbția diferită a luminii de către oxi- și deoxihemoglobină",
+     "O moleculă de hemoglobină poate lega o singură moleculă de O2"],
+  c:[0,1,3],
+  e:"Mioglobina (1 hem) leagă 1 O2; hemoglobina (4 hemi) leagă 4 O2. Legarea cooperativă: prima moleculă de O2 se leagă cel mai GREU, apoi afinitatea crește (porțiunea abruptă a curbei la ~20–30 mmHg)." },
+
+{ q:"Care dintre următorii factori CREȘTE afinitatea hemoglobinei pentru O2?",
+  o:["Creșterea temperaturii",
+     "pH-ul ușor acid, ca în țesuturile periferice",
+     "Creșterea concentrației de 2,3-difosfoglicerat (DPG)",
+     "pH-ul ușor alcalin, ca la nivel pulmonar",
+     "Creșterea concentrației de protoni (H⁺) din mediu"],
+  c:[3],
+  e:"La plămâni, prin difuziunea rapidă a CO2, pH-ul devine ușor alcalin → afinitatea Hb pentru O2 crește și Hb se încarcă cu oxigen. Scăderea pH-ului (↑H⁺), creșterea temperaturii și creșterea DPG scad afinitatea (curba se deplasează la dreapta) → O2 e cedat țesuturilor." },
+
+{ q:"Despre anemia cu celule în formă de seceră (HbS), sunt corecte:",
+  o:["Este cauzată de substituția unui singur nucleotid în gena β-globinei",
+     "Acidul glutamic din poziția 6 a lanțului β este înlocuit cu valină (E6V)",
+     "Un aminoacid cu radical hidrofob este înlocuit cu unul cu radical ionizat",
+     "Hematiile cu formă de seceră sunt mai susceptibile la hemoliză",
+     "Mutația afectează lanțul α al globinei"],
+  c:[0,1,3],
+  e:"În HbS, acidul glutamic (radical IONIZAT) este înlocuit cu valina (radical HIDROFOB) în lanțul β. Hematiile iau formă de seceră/semilună în locul formei biconcave și hemolizează mai ușor." },
+
+{ q:"Referitor la formele anormale ale hemoglobinei, sunt corecte:",
+  o:["Methemoglobina conține Fe³⁺ și nu poate lega O2",
+     "Nitrații și nitriții din apele contaminate pot produce methemoglobinemie",
+     "Vitamina C și albastrul de metilen oxidează fierul la forma ferică",
+     "Monoxidul de carbon are o afinitate pentru Hb de aproximativ 240 de ori mai mare decât O2",
+     "În talasemii se formează tetrameri anormali și instabili (ex. 4α), iar concentrația de Hb scade"],
+  c:[0,1,3,4],
+  e:"Vitamina C și albastrul de metilen sunt REDUCĂTORI – readuc fierul de la Fe³⁺ la Fe²⁺. Carboxihemoglobina e un complex stabil (intoxicația acută: piele roșie). Talasemiile = dezechilibru ereditar în sinteza lanțurilor α/β." },
+
+{ q:"Despre colagen, sunt corecte:",
+  o:["Este cea mai abundentă proteină din corpul uman",
+     "Este format din trei lanțuri α înfășurate într-un helix triplu",
+     "Glicina se găsește în fiecare a treia poziție, în secvența repetitivă Gly–X–Y",
+     "Lanțurile α ale colagenului au conformație de α-helix clasic",
+     "Helixul triplu este stabilizat în principal prin punți disulfidice între lanțuri"],
+  c:[0,1,2],
+  e:"Helixul triplu e stabilizat prin legături de HIDROGEN între cele 3 lanțuri. În Gly–X–Y, X e frecvent prolina, Y frecvent hidroxiprolina; prezența prolinei arată că lanțurile α NU pot fi α-helixuri. Glicina (cel mai mic aa) se potrivește acolo unde lanțurile se apropie." },
+
+{ q:"Referitor la modificările post-translaționale ale colagenului, sunt corecte:",
+  o:["Hidroxilarea prolinei și lizinei are loc după încorporarea lor în lanțul polipeptidic",
+     "Hidroxilarea este dependentă de vitamina C (acid ascorbic)",
+     "Hidroxiprolina scade numărul legăturilor de hidrogen intercatenare",
+     "Gingivoragiile și epistaxisul din scorbut reflectă un colagen de slabă calitate",
+     "Glicozilarea se face pe hidroxiprolină, după formarea helixului triplu"],
+  c:[0,1,3],
+  e:"Hidroxiprolina CREȘTE numărul legăturilor de H intercatenare, stabilizând helixul triplu. Glicozilarea (glucoză, galactoză) se face pe grupul –OH al HIDROXILIZINEI, ÎNAINTE de formarea helixului triplu." },
+
+{ q:"Despre electroforeză și SDS-PAGE, sunt corecte:",
+  o:["La pH 8,5, proteinele migrează de obicei spre electrodul pozitiv",
+     "În SDS-PAGE, detergentul uniformizează sarcina și forma proteinelor",
+     "În SDS-PAGE, separarea se face numai după masa moleculară",
+     "În SDS-PAGE, proteinele mari migrează mai departe de origine decât cele mici",
+     "În electroforeza clasică, viteza de migrare nu depinde de sarcina proteinei"],
+  c:[0,1,2],
+  e:"În electroforeza clasică viteza depinde de sarcina rezultată din radicalii ionizați, de formă și de mediu. În SDS-PAGE (gel de poliacrilamidă + detergent) proteinele MICI migrează mai departe, cele mari rămân mai aproape de origine." },
+
+{ q:"În tehnica Western Blot, specificitatea pentru o anumită proteină este conferită de:",
+  o:["Separarea prin electroforeză SDS-PAGE","Transferul proteinelor pe o membrană","Tratarea cu anticorpi care recunosc specific proteina de interes","Hidroliza acidă prealabilă a probei","Difracția razelor X pe membrană"],
+  c:[2],
+  e:"Etapele Western Blot: SDS-PAGE → transfer pe membrană → anticorpi specifici (marcați) → vizualizare. Doar anticorpii recunosc specific proteina de interes; standardele migrate în paralel ajută la estimarea masei moleculare." },
+
+{ q:"Cristalografia cu raze X permite:",
+  o:["Separarea proteinelor după masa moleculară",
+     "Determinarea structurii spațiale a proteinelor purificate și cristalizate, pe baza imaginii de difracție analizate computerizat",
+     "Identificarea unei proteine cu ajutorul anticorpilor marcați",
+     "Determinarea compoziției în aminoacizi după hidroliză acidă",
+     "Dozarea proteinelor totale dintr-o soluție (ex. metoda biuretului)"],
+  c:[1],
+  e:"Proteina purificată și cristalizată este iradiată cu raze X; fasciculul difractat formează o imagine complexă, din care un computer reconstruiește structura 3D." },
+
+{ q:"Experimentul lui Christian B. Anfinsen cu ribonucleaza a demonstrat că:",
+  o:["Structura primară poate dicta forma tridimensională finală a proteinei",
+     "Ureea hidrolizează legăturile peptidice ale ribonucleazei",
+     "Denaturarea proteinelor este întotdeauna ireversibilă",
+     "Ribonucleaza nu poate funcționa fără chaperone",
+     "Punțile disulfidice nu influențează activitatea enzimatică"],
+  c:[0],
+  e:"Anfinsen a denaturat ribonucleaza cu uree concentrată; după îndepărtarea ureei și refacerea punților de sulf (cu mercaptoetanol), enzima și-a recăpătat funcția → structura primară conține informația pentru structura 3D." },
+
+{ q:"Despre AlphaFold, sunt corecte:",
+  o:["A fost dezvoltat de DeepMind, o filială Alphabet (Google)",
+     "Prezice structura tridimensională a proteinelor pe baza structurii primare",
+     "Este conceput ca un sistem de învățare profundă (deep learning)",
+     "Necesită cristalizarea proteinei pentru a face predicția",
+     "AlphaFold 2 a fost publicat în revista Nature în 2021, ca software open source"],
+  c:[0,1,2,4],
+  e:"AlphaFold folosește doar secvența de aminoacizi (fără cristalizare). AlphaFold 2 a fost publicat pe 15 iulie 2021 în Nature, ca software open source, împreună cu o bază de date a proteoamelor; precizie > 92%." }
+];
+
+// Citate exacte din curs (verificate automat cu textul PDF-ului)
+const CITATIONS = [[{"p": "2", "t": "În proteine, aminoacizii adiacenți sunt uniți covalent prin legături peptidice, care sunt legături amidice între grupul α-carboxil al unui aminoacid și grupul α-amino al următorului aminoacid."}, {"p": "3", "t": "Legăturile peptidice sunt rezistente la condiții care denaturează proteinele, cum ar fi căldura și concentrațiile mari de uree. Expunerea prelungită la un acid sau bază puternică la temperaturi ridicate sau la enzime proteolitice este necesară pentru a rupe aceste legături în mod nonenzimatic sau enzimatic."}, {"p": "3", "t": "Fiecare aminoacid component este numit reziduu, deoarece reprezinta porțiunea de aminoacid rămasă după ce atomii de apă sunt pierduți în timpul formării legăturii peptidice."}], [{"p": "3", "t": "Prin convenție, capătul amino liber (N-terminal) al lanțului peptidic este scris în stânga și capătul carboxil liber (C-terminal) în dreapta. Prin urmare, toate secvențele de aminoacizi sunt citite de la capătul N- la capătul C-terminal."}, {"p": "3", "t": "Când un peptid este denumit, toate reziduurile de aminoacizi își schimbă sufixul (de ex -ina) în -\"-il\", cu excepția aminoacidului C-terminal. De exemplu, un tripeptid compus dintr-o valină N-terminală, o glicină și o leucină C-terminală se numește valil-glicil-leucină."}], [{"p": "4", "t": "Legătura peptidică are un caracter parțial de dublă legătură; adică, este mai scurtă decât o legătură simplă și este rigidă și planară (Fig. 2B). Acest lucru previne rotația liberă în jurul legăturii dintre carbonul carbonilic și azotul legăturii peptidice."}, {"p": "4", "t": "Legătura peptidică este aproape întotdeauna în configurația trans (în loc de cis - vezi Fig. 2B), în mare parte din cauza interferenței sterice a grupurilor R (lanțurile laterale voluminoase favorizeaza conformatia trans)."}, {"p": "4", "t": "Ca toate legăturile amidice, grupurile −C=O și −NH ale legăturii peptidice sunt neîncărcate și nici nu acceptă, nici nu eliberează protoni în intervalul de pH de la 2 la 12."}, {"p": "4", "t": "Cu toate acestea, grupurile −C = O și −NH ale legăturii peptidice sunt polare și sunt implicate în legături de hidrogen"}], [{"p": "4", "t": "Primul pas în determinarea structurii primare a unui polipeptid este identificarea și măsurarea procentului aminoacizilor săi constituenți. Un eșantion purificat al polipeptidului care urmează să fie analizat este mai întâi hidrolizat cu un acid puternic pentru a tăia legăturile peptidice și a elibera aminoacizii individuali."}, {"p": "4", "t": "Aminoacizii se leagă de coloana de cromatografie cu diferite afinități, în funcție de sarcinile lor, de hidrofobicitate și alte caracteristici. Fiecare aminoacid este apoi eliberat secvențial din coloana de cromatografie prin spalare cu soluții speciale (Fig. 3), iar aminoacizii separați sunt cuantificați spectrofotometric."}, {"p": "5", "t": "Dupa o reactie de culoare, aminoacizii genereaza complexe colorate care pot fi cuantificate prin masurarea absorbtiei luminii de catre aceste complexe."}], [{"p": "5", "t": "Secvențierea este un proces de identificare pas cu pas a aminoacidului specific pentru fiecare poziție în lanțul peptidic, începând cu capătul N-terminal (metoda Edman)."}, {"p": "5", "t": "Secventierea moderna se face automat, implicand cicluri repetitive de reactii chimice in care aminoacidul N-terminal este clivat, transformat intr-un compus usor de analizat, identificat, eliminat prin spalare si apoi ciclul se reia, peptidul analizat fiind mai scurt cu cate un aminoacid la fiecare ciclu."}, {"p": "6", "t": "Multe polipeptide sau proteine au o structură primară compusă din mai mult de 100 de aminoacizi. Astfel de molecule nu pot fi secvențiate direct de la un capăt la altul deoarece procesele de spalare repetitive din ciclurile descrise mai sus devin ineficiente."}, {"p": "6", "t": "de exemplu tripsina taie doar dupa arginina si lizina"}, {"p": "6", "t": "Exopeptidazele taie la capetele proteinelor și sunt clasificate în amino-peptidaze și carboxi-peptidaze. Carboxipeptidazele sunt utilizate pentru determinarea aminoacidului C-terminal. Endopeptidazele taie în interiorul unei proteine."}], [{"p": "7", "t": "Acest proces indirect, deși este folosit în mod obișnuit pentru a obține secvențele de aminoacizi ale proteinelor, are limitări: nu poate prezice pozițiile legăturilor disulfidice în lanțul pliat și nu identifica niciun aminoacid care este modificat după incorporarea sa în polipeptid (modificarile aparute dupa sinteza proteica numite si post-translationale). Prin urmare, secvențierea directă a proteinelor este un instrument extrem de important pentru determinarea adevăratei secvențe primare in cazul multor polipeptide."}, {"p": "31", "t": "Acesti aminoacizi unici rezultă din hidroxilarea unora dintre reziduurile de prolină și lizină după incorporarea lor în lanțurile polipeptidice (Fig. 26). Prin urmare, hidroxilarea este o modificare post-translatională."}], [{"p": "7", "t": "Este o structură spiralată, rigidă, cu sensul spre dreapta, formată dintr-un schelet al lanțului polipeptidic -(CH-CO-NH)n- înfășurat strâns, cu lanțurile laterale ale aminoacizilor componenti R care se extind în afara axei centrale pentru a evita interferența sterică reciprocă"}, {"p": "8", "t": "Legăturile de hidrogen se extind în sus și sunt paralele cu axul spiralei, plecand de la oxigenul carbonilic al unei legături peptidice la grupul –NH al unei legături peptidice situata la patru reziduuri distanta în polipeptid."}, {"p": "8", "t": "Fiecare rasucire completa a unui α-helix conține 3,6 aminoacizi."}, {"p": "7", "t": "De exemplu, keratinele sunt o familie de proteine fibroase, rigide, a căror structură secundara este aproape în întregime α-helicoidală. Ele sunt o componentă majoră a țesuturilor precum părul și pielea."}], [{"p": "9", "t": "Prolina perturbă α-helixul deoarece gruparea sa amino secundara si rigida nu este compatibila geometric cu spirala spre dreapta a α-helixului. În schimb, introduce o îndoitură în lanț (aprox. 80⁰), care intrerupe structura helicoidală."}, {"p": "9", "t": "Glicina in schimb, având hidrogen ca grup R, conferă o mare flexibilitate. Aminoacizii cu grupuri R încărcate electric sau voluminoase, cum ar fi glutamatul și respectiv triptofanul, și cei cu o ramură la primul carbon din grupul R (de exemplu, valina), sunt mai puțin susceptibili să fie găsiți într-un α-helix."}], [{"p": "9", "t": "β-Foaia este o altă formă de structură secundară în care toate componentele legăturii peptidice sunt implicate în legături de hidrogen (Fig. 7A)."}, {"p": "10", "t": "O β-foaie este formată din două sau mai multe lanțuri peptidice (β-fâșii) aliniate lateral și stabilizate prin legături de hidrogen între grupurile CO și NH ale aminoacizilor care fie sunt departe unul de celălalt într-un singur polipeptid (legături intracatenare) sau sunt în diferite lanțuri polipeptidice (legături intercatenare). β-Fâșiile adiacente sunt aranjate fie antiparalel una față de cealaltă (alternând, așa cum este arătat în Fig. 7B) sau paralel una față de cealaltă (cum este arătat în Fig. 7C)."}, {"p": "10", "t": "În β-foi, β-fâșiile sunt aproape complet extinse și legăturile de hidrogen dintre fâșii sunt perpendiculare pe scheletul polipeptidic (vezi Fig. 7A)."}], [{"p": "10", "t": "β-Îndoiturile, numite și întoarceri sau β-întoarceri, inversează direcția unui lanț polipeptidic, ajutându-l să formeze o formă globulară compactă, tridimensionala. Acestea sunt de obicei găsite pe suprafața moleculelor proteice și includ adesea reziduuri încărcate."}, {"p": "10", "t": "Acestea sunt în general compuse din patru aminoacizi, dintre care unul poate fi prolina (forma cis), aminoacidul care cauzează o îndoitură în lanțul polipeptidic. Glicina, aminoacidul cu cel mai mic grup R, este de asemenea frecvent găsită în β-îndoituri. β-Îndoiturile sunt stabilizate prin formarea de legături de hidrogen între primul și ultimul reziduu din îndoitură."}], [{"p": "11", "t": "Aceste structuri secundare nonrepetitive nu sunt aleatorii, ci pur și simplu au o structură mai puțin regulată decât cele descrise mai sus. Termenul de „spirală aleatorie” se referă la structura dezordonată obținută doar atunci când proteinele sunt denaturate."}], [{"p": "11", "t": "Proteinele globulare mari sunt construite combinând elemente structurale secundare, inclusiv α-helixuri, β-foiluri și bucle, producând modele geometrice specifice sau motive. Acestea formează în primul rând regiunea de bază (interioară) a moleculei. Acestea sunt conectate prin regiuni de buclă (de exemplu, β-îndoituri) la suprafața proteinei."}, {"p": "11", "t": "De exemplu, α-helixurile și β-foilile care sunt adiacente în secvența primara de aminoacizi sunt de obicei (dar nu întotdeauna) adiacente în proteina finală, îndoită."}, {"p": "11", "t": "Motivul helix–buclă–helix este un exemplu găsit într-un număr de proteine care funcționează ca elemente de control al sintezei ARN (factorii de transcripție)."}, {"p": "13", "t": "Lanțurile polipeptidice care au mai mult de 200 de aminoacizi în lungime constau de obicei din două sau mai multe domenii."}], [{"p": "12", "t": "Ca regula generala, structura primară a unui lanț polipeptidic determină structura sa terțiară."}, {"p": "12", "t": "Structura terțiară a proteinelor globulare în soluție apoasă este compactă, cu o densitate mare (ambalare strânsă) in interiorul moleculei. Lanțurile laterale hidrofobe sunt îngropate în interior, în timp ce grupurile hidrofile sunt în general găsite pe suprafața moleculei. Exceptie fac proteinele transmembranare la care grupurile hidrofile sunt la interiorul si exteriorul celulei si cele hidrofobe sunt in stratul fosfolipidic (fig 9A si B)."}], [{"p": "13", "t": "O legătură disulfidică (–S–S–) este o legătură covalentă formată din grupul sulfhidril (−SH) al fiecăruia dintre cele două reziduuri de cisteină pentru a produce un reziduu de cistină (Fig. 10)."}, {"p": "14", "t": "Cele două cisteine pot fi separate una de cealaltă prin mulți aminoacizi în secvența primară a unui polipeptid sau pot fi chiar localizate pe două polipeptide diferite."}, {"p": "14", "t": "O legătură disulfidică contribuie la stabilitatea formei tridimensionale a moleculei proteice și împiedică denaturarea acesteia în mediul extracelular. De exemplu, multe legături disulfidice se găsesc în proteine precum imunoglobulinele care sunt secretate de celule. Este de menționat că o enzima speciala - izomeraza proteinelor disulfidice - rupe și reformează legăturile disulfidice în timpul îndoirii."}], [{"p": "15", "t": "Grupurile încărcate negativ, cum ar fi grupul carboxilat (−COO−) din lanțul lateral al aspartatului sau glutamatului, pot interacționa cu grupurile încărcate pozitiv, cum ar fi grupul amino (−NH₃⁺) din lanțul lateral al lizinei (vezi Fig. 12)."}, {"p": "14", "t": "Lanțurile laterale ale aminoacizilor care conțin hidrogen legat de oxigen sau azot, cum ar fi în gruparile hidroxil ale serinei și treoninei, pot forma legături de hidrogen"}, {"p": "14", "t": "Aminoacizii cu lanțuri laterale nepolare tind să fie localizați în interiorul moleculei polipeptidice, unde se asociază cu alți aminoacizi hidrofobi (Fig. 11)."}], [{"p": "16", "t": "Îndoirea proteinelor, care are loc în celulă în câteva secunde până la câteva minute, implică căi ordonate, non-aleatorii. Pe măsură ce un peptid se îndoaie, se formează structuri secundare, determinate de efectul hidrofob - grupurile hidrofobe vin împreună pe măsură ce apa este eliberată din zona."}, {"p": "16", "t": "În ultima etapă, peptidul atinge forma sa complet îndoită, nativă (funcțională) caracterizată printr-o stare energetica scăzută (Fig. 14). Unele proteine biologic active sau segmentele acestora nu au o structură terțiară stabilă și sunt denumite proteine intrinsec dezordonate (situatie rara)."}], [{"p": "17", "t": "Denaturarea duce la desfacerea și dezorganizarea structurilor secundare și terțiare ale unei proteine fără hidroliza legăturilor peptidice. Agenții denaturanți includ căldura, ureea, solvenții organici, acizi sau baze puternice, detergenți și ioni de metale grele precum plumbul. Denaturarea poate fi, în condiții ideale, reversibilă, astfel încât proteina să se refoldeze în structura sa nativă originală atunci când agentul denaturant este îndepărtat. Cu toate acestea, majoritatea proteinelor rămân permanent dezordonate odată denaturate. Proteinele denaturate sunt adesea insolubile și precipită din soluție."}], [{"p": "17", "t": "Cu toate acestea, majoritatea proteinelor denaturate nu-și reiau conformațiile native chiar și în condiții de mediu favorabile. Acest lucru se datorează faptului că, pentru multe proteine, îndoirea este un proces facilitat care necesită hidroliza ATP și un grup specializat de proteine, denumite chaperone moleculare (fig 15). Chaperonele, unele cunoscute și sub numele de proteine de șoc termic (HSPs), interacționează cu un polipeptid în diferite etape ale procesului de îndoire."}, {"p": "17", "t": "Unele chaperone leagă regiunile hidrofobe ale unui polipeptid extins și sunt importante pentru a menține proteina neîndoită până când sinteza sa este completată (de exemplu, Hsp70). Altele formează structuri macromoleculare asemănătoare cu o cușcă compusă din două inele suprapuse. Proteina parțial îndoită intră în cușcă, se leagă de cavitatea centrală prin interacțiuni hidrofobe, se îndoaie și este eliberată (de exemplu, Hsp60 mitocondrial)."}], [{"p": "18", "t": "Izoformele sunt proteine care îndeplinesc aceeași funcție, dar au structuri primare diferite. Acestea pot rezulta din gene diferite sau din procesarea specifică de catre țesuturi a produsului unei singure gene. Dacă proteinele izoforme funcționează ca enzime, acestea sunt denumite izoenzime."}], [{"p": "19", "t": "Componenta dominantă a plăcii amiloide care se acumulează în AD este amiloidul β (Aβ), un peptid extracelular care conține 40 până la 42 de reziduuri de aminoacizi cu o structură secundară de foi β."}, {"p": "19", "t": "Aβ care este depus în creier în AD este derivat prin tăieri enzimatice (de secretaze) dintr-o proteina precursor mai mare, o proteină transmembranară unică exprimată pe suprafața celulei în creier și în alte țesuturi (Fig. 16)."}, {"p": "19", "t": "Mutațiile de la presenilină, subunitatea catalitică a γ-secretazei, sunt cea mai comună cauză a AD familial."}, {"p": "20", "t": "Majoritatea cazurilor de AD nu sunt determinate genetic, deși cel puțin 5% din cazuri sunt familiale. Un al doilea factor biologic implicat în dezvoltarea AD este acumularea de fibre încâlcite în interiorul neuronilor. O componentă cheie a acestor fibre încâlcite este o formă anormală a proteinei tau (τ) care este hiperfosforilată și insolubilă;"}], [{"p": "20", "t": "Prionii sau proteinele infecțioase sunt proteine care apar în mod normal organismele vii, dar pot deveni periculoase atunci când se pliază greșit, transformându-se într-o formă anormală, infecțioasă (Fig 17)."}, {"p": "20", "t": "Două exemple de boli cauzate de prioni sunt boala Creutzfeldt-Jakob (encefalopatie spongiformă subacuta) la oameni și boala vacii nebune (encefalopatie spongiformă bovină) la animale."}, {"p": "20", "t": "Proteina prionica normala PrP (stanga) devine patologica (dr) prin conversia unor structuri secundare de tip alfa in structuri beta."}, {"p": "21", "t": "Agentul infectios poate fi in acest caz chiar o proteina impachetata anormal, care e capabila sa corupa alte proteine normale din jurul ei"}], [{"p": "21", "t": "Proteinele simple sunt alcatuite numai din aminoacizi."}, {"p": "21", "t": "Heteroproteinele contin pe langa lantul/rile polipeptidic/e si o parte neproteica care este o structura chimica distincta. Partea proteica a heteroproteinelor se numeste de regula apoproteina iar partea neproteica se mai numeste parte prostetica."}], [{"p": "21", "t": "glicoproteine – partea prostetica e din clasa glucidelor, ex glicoproteinele de pe suprafata celulelor"}, {"p": "21", "t": "lipoproteine – gruparea prosteica e din clasa lipidelor, ex lipoproteinele de transport pentru lipidele din sange (HDL, LDL etc)"}, {"p": "21", "t": "fosfoproteine – contin fosfat legat la aminoacizi care au hidroxil la radical (tirozina, treonina, serina), ex cazeina din lapte"}, {"p": "21", "t": "flavoproteine au in plus o structura flavonica de exemplu enzimele care folosesc vitamina B2"}, {"p": "21", "t": "metaloproteine contin ioni metalici, ex zinc in alcool dehidrogenaza, molibden in xantin oxidaza, mangan sau cupru in superoxid dismutaza etc"}], [{"p": "30", "t": "Proteinele fibroase sunt de obicei organizate în filamente si au secvențe repetitive de aminoacizi. Ele sunt relativ insolubile și au funcții structurale sau protectoare în țesuturile noastre, cum ar fi în țesuturile conjunctive, tendoane, oase și fibre musculare."}, {"p": "22", "t": "Ele sunt de obicei solubile în apă, având multi aminoacizi hidrofili pe suprafața lor exterioară, in contact cu mediul apos. Mai mulți aminoacizi nepolari din interiorul proteinei care au radicali hidrofobi stabilizeaza prin interactiuni hidrofobe interne structura globulară. Acest lucru este în contrast cu proteinele fibroase, care formează filamente lungi asemănătoare cu tije, si sunt insolubile în apă, oferind suport structural în mediul extracelular."}], [{"p": "22–23", "t": "Hemul este o structură plană, compusă dintr-un inel porfirinic (4 nuclee de pirol unite prin punti de 1 C) cu fier ionic de tip feros (Fe²⁺) care e fixat în centrul inelului porfirinic (fig 18). Fierul este ținut în centrul moleculei de hem prin legături cu cei patru atomi de azot ai inelului porfirinic. Fe²⁺ al hemului poate forma două legături suplimentare, cate una pe fiecare parte a inelului porfirinic planar. În hemoglobină, una dintre aceste poziții este coordonată cu lanțul lateral al unui reziduu de histidină al moleculei de globină, în timp ce cealaltă poziție este disponibilă pentru a lega O₂ (Fig 19)."}], [{"p": "23", "t": "Mioglobina, o hemeproteină prezentă în miocard și mușchiul scheletic, funcționează atât ca un rezervor de oxigen, cât și ca un transportor de oxigen care crește rata de transport a oxigenului în interiorul celulei musculare. Mioglobina constă dintr-un singur lanț polipeptidic care este structural similar cu lanțurile polipeptidice individuale ale moleculei tetramerice de hemoglobină."}, {"p": "24", "t": "Mioglobina este o moleculă compactă, cu aproximativ 80% din lanțul său polipeptidic îndoit în opt porțiuni de α-helix. Aceste regiuni α-helicale, etichetate de la A la H (figura 19A), sunt delimitate fie de prezența prolinei, al cărei inel cu cinci membri nu poate fi acomodat într-un α-helix fie de structuri de tip β-turn și bucle stabilizate de legături de hidrogen și legături de tip ionic."}, {"p": "24", "t": "Interiorul moleculei globulare de mioglobină este compus aproape în întregime din aminoacizi nepolari."}], [{"p": "24", "t": "Grupul prostetic heme al moleculei de mioglobină se află într-o adâncitură (“buzunar”), care este căptușită cu aminoacizi nepolari. Excepțiile notabile sunt două reziduuri de histidină, care sunt aminoacizi bazici (Fig. 19B). Una dintre cele două reziduuri de histidină, histidina proximală, se leagă direct de Fe²⁺ al hemului. A doua, sau histidina distală, nu interacționează direct cu grupul hem, dar ajută la stabilizarea legării O₂ la Fe²⁺."}], [{"p": "24", "t": "Hemoglobina se găsește exclusiv în celulele roșii din sânge (hematii sau eritrocite), unde funcția sa principală este de a transporta O₂ de la plămâni la capilarele țesuturilor. Hemoglobina de tip A (HbA), hemoglobina majoră la adulți, este compusă din patru lanțuri polipeptidice (două lanțuri α și două lanțuri β) ținute împreună de interacțiuni noncovalente (Fig. 20)."}, {"p": "24–25", "t": "De exemplu, hemoglobina poate transporta protoni (H⁺) și dioxid de carbon (CO₂) de la țesuturi la plămâni și poate transporta patru molecule de O₂ de la plămâni la celulele corpului."}, {"p": "25", "t": "Cele două lanțuri polipeptidice din fiecare dimer sunt ținute strâns împreună în primul rând prin interacțiuni hidrofobe (Fig. 21)."}, {"p": "25", "t": "Cei doi dimeri sunt ținuți împreună în primul rând prin legături polare. Interacțiunile mai slabe dintre dimeri le permit să se miște unul față de celălalt."}], [{"p": "26", "t": "Forma T: Forma deoxi a hemoglobinei este numită forma \"T\", sau forma tensionata. În forma T, cei doi dimeri αβ interacționează printr-o rețea de legături ionice și legături de hidrogen care reduc posibilitatea de mișcare a lanțurilor polipeptidice. Fierul (Fe²⁺) este tras în afara structurii plane a hemului. Conformația T este forma cu afinitate scăzută pentru oxigen a hemoglobinei."}, {"p": "26", "t": "Forma R: Legarea O₂ la Fe²⁺ al hemului trage fierul în planul structurii inelului hemului (Fig. 22). Deoarece fierul este, de asemenea, legat de histidina proximală, mișcarea rezultată a lanțurilor de globină modifică interfața dintre dimerii αβ, ducând la o structură numită forma \"R\", sau forma relaxată. Conformația R este forma de afinitate înaltă pentru oxigen a hemoglobinei."}], [{"p": "27", "t": "Mioglobina poate lega doar o moleculă de O₂, deoarece conține doar un singur grup hem. În contrast, hemoglobina poate lega patru molecule de O₂, câte una la fiecare dintre cele patru grupuri hem."}, {"p": "27", "t": "Pulsoximetria este o metodă non-invazivă, indirectă de măsurare a saturației oxigenului din sângele arterial bazată pe diferențe în absorbția luminii de către oxihemoglobină și deoxihemoglobină"}, {"p": "27", "t": "Acest grafic ilustrează că mioglobina are o afinitate mai mare pentru oxigen la toate valorile pO₂ decât hemoglobina."}, {"p": "28", "t": "Curba de disociere a oxigenului pentru hemoglobină are o formă sigmoidală (vezi Fig. 23A), indicând că subunitățile cooperează în legarea O₂."}, {"p": "28", "t": "Deși este mai dificil pentru prima moleculă de oxigen să se lege de hemoglobină, legarea ulterioară a moleculelor de oxigen are loc cu afinitate înaltă, așa cum este arătat de curba ascendentă abruptă în regiunea apropiată de 20 până la 30 mm Hg."}], [{"p": "28", "t": "La pH usor mai acid decat cel fiziologic, cum se intampla in tesuturile periferice, hemoglobina va ceda mai usor oxigenul, pentru ca are o afinitate mai scazuta pentru O₂, putand astfel sa oxigeneze tesuturile. La pH usor mai alcalin decat cel fiziologic, cum se intampla la nivel pulmonar prin difuziunea rapida a CO₂, hemoglobina va primi mai usor oxigenul, pentru ca are o afinitate mai crescuta pentru O₂, putand astfel sa se incarce cu oxigenul provenit din respiratie."}, {"p": "28", "t": "2,3-difosfogliceratul sau DPG (care va fi studiat la glicoliza) influenteaza puternic afinitatea hemoglobinei pentru oxigen."}, {"p": "28", "t": "Cresterea temperaturii scade afinitatea pentru O₂."}], [{"p": "29", "t": "Anemia cu celule secera este o tulburare genetică cauzată de o substituție a unui singur nucleotid. Astfel se va modifica un sigur codon în gena pentru β-globină si se va substitui un singur aminoacid in lantul beta (substitutia E6V: acidul glutamic – cu radical ionizat va fi inlocuit cu valina -cu radical hidrofob). Modificarea în secvența de aminoacizi a HbS modifica morfologia RBC în forme de secera sau semilună, în locul formei biconcave rotunde a unui RBC normal care contine HbA normală. Hematiile cu forma anormala sunt mai susceptibile la hemoliza."}], [{"p": "29", "t": "Oxidarea fierului din hemoglobină de la Fe²⁺ la Fe³⁺ produce methemoglobină, care nu poate lega O₂. Această oxidare poate cauzată de acțiunea anumitor medicamente sau toxice cum ar fi nitrații si nitritii din apele contaminate. Exista medicamente de tip reducator (vitamina C, albastrul de metilen) care pot reduce inapoi fierul de la forma ferica la forma feroasa."}, {"p": "29", "t": "Este un complex stabil intre monoxidul de carbon și hemoglobină (CO are afinitate de aproximativ 240 de ori mai mare pentru Hb decat O₂)."}, {"p": "29", "t": "În talasemii, sinteza fie a lanțului de globină α-, fie a celui β- este defectuoasă, astfel se formeaza tetrameri anormali si instabili (de ex 4α) iar concentrația de hemoglobină va fi redusă."}], [{"p": "30", "t": "Colagenul este cea mai abundentă proteină din corpul uman. O moleculă tipică de colagen este o structură lungă și rigidă în care trei polipeptide (denumite lanțuri α) sunt înfășurate una în jurul celeilalte într-un helix triplu asemănător unei frânghii (Fig. 25)."}, {"p": "31", "t": "Spre deosebire de majoritatea proteinelor globulare care sunt structuri compacte, colagenul, o proteină fibroasă, are o structură de helix triplu elongată care este stabilizată de legături de hidrogen intre cele 3 lanțuri."}, {"p": "31", "t": "Prezența prolinei arata că structura helicală a lanțului α nu poate fi un α-helix. Glicina, cel mai mic aminoacid, se găsește în fiecare a treia poziție a fiecărui lanț polipeptidic."}, {"p": "31", "t": "Reziduurile de glicină fac parte dintr-o secvență repetitivă, −Gly–X–Y–, unde X este frecvent prolină, iar Y este adesea hidroxiprolină (dar poate fi si hidroxilizină)."}], [{"p": "31", "t": "Acesti aminoacizi unici rezultă din hidroxilarea unora dintre reziduurile de prolină și lizină după incorporarea lor în lanțurile polipeptidice (Fig. 26). Prin urmare, hidroxilarea este o modificare post-translatională. Prezența hidroxiprolinei creste numarul de legături de hidrogen intercatenare care stabilizează structura triplu-helicoidală. Hidroxilarea este dependenta de vitamina C (acidul ascorbic). Astfel se explica gingivoragiile si epistaxisul (sangerarile) din scorbut (lipsa vitaminei C) care arata prezenta unui colagen de proasta calitate."}, {"p": "31", "t": "Grupul hidroxil al reziduurilor de hidroxilizină din colagen poate fi si glicozilat enzimatic. Cel mai frecvent, glucoza și galactoza sunt atașate secvențial lanțului polipeptidic înainte de formarea helixului triplu (Fig. 26)."}], [{"p": "33", "t": "Intr-un mediu special care conduce curentul electric (celuloza umezita, geluri diverse etc) proteinele se vor deplasa spre unul dintre electrozi (de obicei spre electrodul pozitiv, cand solutiile se afla la pH 8.5). Viteza de deplasare depinde de sarcina electrica rezultata din radicalii ionizati ai proteinei dar si de forma sau de mediul de migrare."}, {"p": "33", "t": "Moleculele de detergent vor egaliza si uniformiza sarcina si forma proteinelor astfel incat migrarea se va face numai dupa masa moleculara (proteinele mici vor migra mai departe si cele mari mai aproape de origine)"}], [{"p": "35", "t": "In aceasta tehnica, dupa ce proteinele sunt separate prin electroforeza SDS PAGE, sunt transferate pe o membrana si sunt tratate cu anticorpi care recunosc specific doar proteina de interes. Deoarece acesti anticorpi pot fi marcati, proteinele pot fi vizualizate daca sunt prezente (fig 30)"}], [{"p": "34", "t": "In aceasta tehnica, proteinele purificate si cristalizate sunt lovite cu un fascicul de radiatii X. Acest fascicul va suferi fenomene de difractie si va genera o imagine complexa care poate fi captata pe un ecran. Un computer va analiza imaginea formata dupa difractie si va recompune structura proteinei care a putut sa genereze acea imagine (fig 29)."}], [{"p": "35–36", "t": "Primul cercetator care a sesizat ca structura primara a proteinelor poate dicta si forma finala 3D a acestora a fost laureatul Premiului Nobel, Christian B. Anfinsen. Acesta a observat ca o proteina denaturata (in care sunt pierdute structurile secundara, tertiara si puntile de sulf) poate fi uneori renaturata in exact aceeasi structura tridimensionala. Pentru aceasta a folosit ribonucleaza ca proteina, pe care a denaturat-o cu o solutie concentrata de uree. Dupa eliminarea ureei si refacerea puntilor de sulf cu mercaptoetanol, ribonucleaza si-a recapatat functia de enzima."}], [{"p": "36", "t": "AlphaFold este un program de inteligență artificială (AI) dezvoltat de DeepMind, o filială de la Alphabet (Google), care efectuează predicții ale structurii tridimensionale a proteinelor pe baza structurii primare. Programul este conceput ca un sistem de învățare profundă - si este acum cel mai bun software pentru determinarea structurii (foldingului) proteinelor."}, {"p": "36", "t": "La data de 15 iulie 2021, AlphaFold 2 a fost publicat în revista Nature ca software open source impreuna cu o bază de date a proteoamelor diverselor specii (fig 31)."}]];
+
+const LETTERS = "ABCDE";
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,rnd){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+
+const optRnd = mulberry32(20261103);
+const perm = QUESTIONS.map(q => shuffle(q.o.map((_,i)=>i), optRnd));
+let order = QUESTIONS.map((_,i)=>i);
+let state, onlyWrong = false, finished = false;
+
+function freshState(){ state = QUESTIONS.map(()=>({sel:new Set(), result:null})); finished=false; }
+
+function render(){
+  const quiz = document.getElementById('quiz');
+  quiz.innerHTML = '';
+  order.forEach((qi, pos) => {
+    const q = QUESTIONS[qi], st = state[qi];
+    const card = document.createElement('div');
+    card.className = 'q' + (st.result ? ' locked ' + st.result : '');
+    card.dataset.qi = qi;
+    if (onlyWrong && (!st.result || st.result === 'ok')) card.classList.add('hidden');
+
+    const head = document.createElement('div');
+    head.className = 'qhead';
+    head.innerHTML = `<span>Întrebarea ${pos+1} din ${QUESTIONS.length}</span><span></span>`;
+    card.appendChild(head);
+
+    const t = document.createElement('div');
+    t.className = 'qtext';
+    t.textContent = q.q;
+    card.appendChild(t);
+
+    const correct = new Set(q.c);
+    perm[qi].forEach((oi, k) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt';
+      let tag = '';
+      if (st.result){
+        if (correct.has(oi) && st.sel.has(oi)) { b.classList.add('correct'); tag='✔ corect'; }
+        else if (!correct.has(oi) && st.sel.has(oi)) { b.classList.add('wrong'); tag='✘ greșit'; }
+        else if (correct.has(oi)) { b.classList.add('missed'); tag='corect, nemarcat'; }
+      } else if (st.sel.has(oi)) b.classList.add('sel');
+      b.innerHTML = `<span class="box">${LETTERS[k]}</span><span></span><span class="tag">${tag}</span>`;
+      b.children[1].textContent = q.o[oi];
+      b.addEventListener('click', () => {
+        if (st.result) return;
+        st.sel.has(oi) ? st.sel.delete(oi) : st.sel.add(oi);
+        b.classList.toggle('sel');
+        hint.textContent = '';
+      });
+      card.appendChild(b);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const hint = document.createElement('span');
+    hint.className = 'hint';
+    if (!st.result){
+      const chk = document.createElement('button');
+      chk.className = 'primary'; chk.type='button'; chk.textContent = 'Verifică';
+      chk.addEventListener('click', () => {
+        if (st.sel.size === 0){ hint.textContent = 'Selectează cel puțin o variantă.'; return; }
+        evaluate(qi); render(); updateStats();
+      });
+      actions.appendChild(chk);
+    } else {
+      const retry = document.createElement('button');
+      retry.type='button'; retry.textContent = 'Reîncearcă întrebarea';
+      retry.addEventListener('click', () => { st.sel.clear(); st.result=null; render(); updateStats(); });
+      actions.appendChild(retry);
+    }
+    actions.appendChild(hint);
+    card.appendChild(actions);
+
+    if (st.result){
+      const fb = document.createElement('div');
+      fb.className = 'feedback ' + st.result;
+      const verdict = {ok:'✔ Corect!', partial:'◐ Parțial corect', bad:'✘ Greșit'}[st.result];
+      const letters = perm[qi].map((oi,k)=>correct.has(oi)?LETTERS[k]:null).filter(Boolean).join(', ');
+      fb.innerHTML = `<div class="verdict">${verdict}${st.sel.size===0?' (fără răspuns)':''}</div><div><b>Răspuns corect:</b> ${letters}</div><div style="margin-top:4px"></div>`;
+      fb.lastChild.textContent = q.e;
+      const cites = document.createElement('div');
+      cites.className = 'cite';
+      cites.innerHTML = '<div class="cite-title">📖 Din curs:</div>';
+      CITATIONS[qi].forEach(c => {
+        const bq = document.createElement('blockquote');
+        bq.textContent = '„' + c.t + '”';
+        const pg = document.createElement('span');
+        pg.className = 'pg';
+        pg.textContent = ' (pag. ' + c.p + ')';
+        bq.appendChild(pg);
+        cites.appendChild(bq);
+      });
+      fb.appendChild(cites);
+      card.appendChild(fb);
+    }
+    quiz.appendChild(card);
+  });
+}
+
+function evaluate(qi){
+  const st = state[qi], correct = new Set(QUESTIONS[qi].c);
+  const hits = [...st.sel].filter(i=>correct.has(i)).length;
+  const exact = hits === correct.size && st.sel.size === correct.size;
+  st.result = exact ? 'ok' : (hits > 0 ? 'partial' : 'bad');
+}
+
+function updateStats(){
+  const done = state.filter(s=>s.result).length;
+  const ok = state.filter(s=>s.result==='ok').length;
+  document.getElementById('sDone').textContent = done;
+  document.getElementById('sOk').textContent = ok;
+  document.getElementById('sPct').textContent = done ? Math.round(ok/done*100)+'%' : '–';
+  document.getElementById('prog').style.width = (done/QUESTIONS.length*100)+'%';
+  const res = document.getElementById('result');
+  if (done === QUESTIONS.length){
+    const pct = Math.round(ok/QUESTIONS.length*100);
+    const partial = state.filter(s=>s.result==='partial').length;
+    const msg = pct>=90?'Excelent! 🎉':pct>=75?'Foarte bine! 👏':pct>=50?'Bine, mai repetă greșelile. 📚':'Mai e de lucru – revizuiește cursul. 💪';
+    res.style.display='block';
+    res.innerHTML = `<div class="big">${ok} / ${QUESTIONS.length} (${pct}%)</div><div>${msg}</div><div style="color:var(--muted);font-size:.9rem;margin-top:4px">Parțial corecte: ${partial} · Greșite: ${QUESTIONS.length-ok-partial}</div>`;
+  } else res.style.display='none';
+}
+
+function hasProgress(){ return state.some(s=>s.result || s.sel.size); }
+
+document.getElementById('btnFinish').addEventListener('click', () => {
+  const unanswered = state.filter(s=>!s.result && s.sel.size===0).length;
+  if (unanswered && !confirm(`Ai ${unanswered} întrebări fără răspuns. Termini testul oricum?`)) return;
+  state.forEach((s,i)=>{ if(!s.result){ if(s.sel.size) evaluate(i); else s.result='bad'; } });
+  finished = true; render(); updateStats();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+document.getElementById('btnWrong').addEventListener('click', e => {
+  onlyWrong = !onlyWrong;
+  e.target.classList.toggle('active', onlyWrong);
+  e.target.textContent = onlyWrong ? 'Arată toate' : 'Doar greșelile';
+  render();
+});
+document.getElementById('btnShuffle').addEventListener('click', () => {
+  if (hasProgress() && !confirm('Amestecarea resetează progresul. Continui?')) return;
+  freshState(); order = shuffle(order.slice(), Math.random); render(); updateStats();
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (hasProgress() && !confirm('Sigur vrei să resetezi toate răspunsurile?')) return;
+  freshState(); order = QUESTIONS.map((_,i)=>i); render(); updateStats();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+document.getElementById('sTotal').textContent = QUESTIONS.length;
+freshState(); render(); updateStats();
+</script>
+</body>
+</html>
